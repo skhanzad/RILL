@@ -1,0 +1,44 @@
+{
+ "ckpt": "runs/df68-B/best.pt",
+ "nfe": 1,
+ "noise": "zero",
+ "config": {
+  "backbone": "jhu-clsp/ettin-encoder-68m",
+  "dit_layers": 6,
+  "convnext_blocks": 2,
+  "score_encoding": "cdf"
+ },
+ "params": 72852481,
+ "decision-v7.test": {
+  "acc": 0.8266666666666667,
+  "nll": 0.4104160192402718,
+  "brier": 0.23274364189110266,
+  "ece": 0.029274878453744185,
+  "confident_error_rate": 0.019166666666666665,
+  "coverage_at_5pct_error": 0.6733333333333333
+ },
+ "transfer-v4.test": {
+  "acc": 0.5823170731707317,
+  "nll": 0.9090706149920029,
+  "brier": 0.5371902666257594,
+  "ece": 0.07425696905399953,
+  "confident_error_rate": 0.03353658536585366,
+  "coverage_at_5pct_error": 0.001524390243902439
+ },
+ "pool.heldout": {
+  "acc": 0.5931758530183727,
+  "nll": 0.7038108499622634,
+  "brier": 0.4561576303441676,
+  "ece": 0.07002140923896574,
+  "confident_error_rate": 0.011811023622047244,
+  "coverage_at_5pct_error": 0.13910761154855644
+ },
+ "pool.train": {
+  "acc": 0.611451048951049,
+  "nll": 0.723437701559753,
+  "brier": 0.4603265514369738,
+  "ece": 0.052951391554510105,
+  "confident_error_rate": 0.0118006993006993,
+  "coverage_at_5pct_error": 0.10708041958041958
+ }
+}

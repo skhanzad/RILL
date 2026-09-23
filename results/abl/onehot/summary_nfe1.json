@@ -1,0 +1,30 @@
+{
+ "ckpt": "runs/abl68-onehot-score/best.pt",
+ "nfe": 1,
+ "noise": "zero",
+ "canonical": 0,
+ "config": {
+  "backbone": "jhu-clsp/ettin-encoder-68m",
+  "dit_layers": 6,
+  "convnext_blocks": 2,
+  "score_encoding": "onehot",
+  "calibrator": false
+ },
+ "params": 72852481,
+ "decision-v7.development": {
+  "acc": 0.7460443037974683,
+  "nll": 0.5785993627617992,
+  "brier": 0.33096202216126186,
+  "ece": 0.0275570451458735,
+  "confident_error_rate": 0.01740506329113924,
+  "coverage_at_5pct_error": 0.4295886075949367
+ },
+ "transfer-v4.development": {
+  "acc": 0.5198170731707317,
+  "nll": 0.9382253049082679,
+  "brier": 0.577258878246545,
+  "ece": 0.08544178348312757,
+  "confident_error_rate": 0.001524390243902439,
+  "coverage_at_5pct_error": 0.0
+ }
+}

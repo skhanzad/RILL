@@ -1,0 +1,370 @@
+<title>Rill Decision Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Newsreader:opsz,wght@6..72,500;6..72,600&display=swap">
+<style>
+:root {
+  --ground: #f2f4f1; --surface: #ffffff; --ink: #16201c; --muted: #58675f; --line: #d7ded9;
+  --water: #13808c; --water-tint: #d7eef0; --ok: #2c7a4d; --ok-tint: #dcefe3; --flag: #bf5236; --flag-tint: #f6e1da;
+  --bar: #cfe6e8; --focus: #13808c;
+  --display: "Newsreader", "Iowan Old Style", Georgia, serif;
+  --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ground: #0e1412; --surface: #151d1a; --ink: #e3ebe6; --muted: #93a59c; --line: #28352f;
+    --water: #52b8c4; --water-tint: #173538; --ok: #62c28f; --ok-tint: #173226; --flag: #e3805f; --flag-tint: #3a211a;
+    --bar: #1d4146; --focus: #52b8c4; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --ground: #0e1412; --surface: #151d1a; --ink: #e3ebe6; --muted: #93a59c; --line: #28352f;
+  --water: #52b8c4; --water-tint: #173538; --ok: #62c28f; --ok-tint: #173226; --flag: #e3805f; --flag-tint: #3a211a;
+  --bar: #1d4146; --focus: #52b8c4; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--ground); color: var(--ink); font: 15px/1.5 var(--sans); padding-inline: 16px; padding-block: 20px 48px; }
+.wrap { max-width: 1120px; margin: 0 auto; display: grid; gap: 20px; }
+header { display: grid; gap: 6px; }
+h1 { font: 600 clamp(1.7rem, 3.4vw, 2.3rem)/1.1 var(--display); margin: 0; letter-spacing: -0.01em; text-wrap: balance; }
+.lede { margin: 0; color: var(--muted); max-width: 68ch; }
+.status { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font: 500 12.5px/1 var(--mono); color: var(--muted); }
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 9px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+.dot.ready { background: var(--ok); } .dot.busy { background: var(--water); animation: pulse 1s infinite alternate; } .dot.err { background: var(--flag); }
+@keyframes pulse { from { opacity: .35; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .dot.busy { animation: none; } }
+.grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+@media (max-width: 860px) { .grid { grid-template-columns: 1fr; } }
+section.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px; display: grid; gap: 14px; }
+.panel h2 { font: 600 1.15rem/1.2 var(--display); margin: 0; }
+.eyebrow { font: 500 11px/1 var(--mono); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.presets { display: flex; flex-wrap: wrap; gap: 6px; }
+button { font: 500 13.5px/1 var(--sans); border-radius: 7px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); padding: 9px 12px; cursor: pointer; }
+button:hover { border-color: var(--water); }
+button.primary { background: var(--water); border-color: var(--water); color: #fff; }
+:root[data-theme="dark"] button.primary { color: #0e1412; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) button.primary { color: #0e1412; } }
+button[aria-pressed="true"] { background: var(--water-tint); border-color: var(--water); }
+button:disabled { opacity: .55; cursor: default; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+label { font: 500 12.5px/1.3 var(--sans); color: var(--muted); display: grid; gap: 5px; }
+textarea, input[type="text"], select { width: 100%; font: 14px/1.45 var(--sans); color: var(--ink); background: var(--ground); border: 1px solid var(--line); border-radius: 7px; padding: 9px 10px; }
+textarea { resize: vertical; }
+textarea.opts { font: 13px/1.5 var(--mono); }
+.q { border-top: 1px dashed var(--line); padding-top: 12px; display: grid; gap: 8px; }
+.qhead { display: grid; grid-template-columns: 130px minmax(0, 1fr) auto; gap: 8px; align-items: end; }
+@media (max-width: 480px) { .qhead { grid-template-columns: 1fr; } }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.hint { font-size: 12.5px; color: var(--muted); margin: 0; }
+.decision { display: grid; gap: 8px; padding: 12px 0 4px; border-top: 1px solid var(--line); }
+.decision:first-of-type { border-top: 0; padding-top: 0; }
+.dhead { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.dhead .qtext { font-weight: 600; }
+.badge { font: 500 12px/1 var(--mono); padding: 5px 8px; border-radius: 999px; white-space: nowrap; }
+.badge.exec { background: var(--ok-tint); color: var(--ok); } .badge.defer { background: var(--flag-tint); color: var(--flag); }
+.opt { display: grid; grid-template-columns: minmax(0, 1fr) 58px; gap: 10px; align-items: center; }
+.bar { position: relative; min-height: 30px; border-radius: 6px; background: var(--ground); overflow: hidden; display: flex; align-items: center; }
+.bar > i { position: absolute; inset: 0 auto 0 0; background: var(--bar); border-radius: 6px; transition: width .35s ease; }
+.bar.top > i { background: var(--water-tint); box-shadow: inset 3px 0 0 var(--water); }
+.bar > span { position: relative; padding: 5px 9px; font-size: 13.5px; overflow-wrap: anywhere; }
+.pct { font: 500 13px/1 var(--mono); font-variant-numeric: tabular-nums; text-align: right; }
+.summary { font: 13px/1.4 var(--mono); color: var(--muted); }
+.thr { display: grid; grid-template-columns: auto minmax(0, 1fr) 52px; gap: 10px; align-items: center; }
+input[type="range"] { width: 100%; accent-color: var(--water); }
+.empty { color: var(--muted); font-size: 14px; }
+footer { color: var(--muted); font-size: 12.5px; max-width: 80ch; }
+code { font-family: var(--mono); font-size: .92em; }
+</style>
+
+<div class="wrap">
+  <header>
+    <span class="eyebrow">typed decisions, computed on this device</span>
+    <h1>Rill Decision Lab</h1>
+    <p class="lede">Rill is a 34M-parameter flow-matching decision model. Give it a piece of text (the <em>state</em>) and a few typed questions: yes/no, one-of-many choice, or an ordered score. It returns a probability for every option from one forward pass, and a small calibrator trained from outcome-only rewards sets how sure it should be. The model runs in your browser (WebAssembly, or plain JavaScript where that is unavailable), so nothing you type leaves this device.</p>
+    <div class="status" aria-live="polite">
+      <span class="chip"><span class="dot busy" id="dot"></span><span id="status">Loading model…</span></span>
+      <span class="chip" id="size">— MB</span>
+      <span class="chip" id="lat">latency —</span>
+      <span class="chip" id="engine">runtime —</span>
+    </div>
+  </header>
+
+  <div class="grid">
+    <section class="panel" aria-labelledby="req-h">
+      <div class="row" style="justify-content: space-between;">
+        <h2 id="req-h">Request</h2>
+        <div class="presets" id="presets" role="group" aria-label="Examples"></div>
+      </div>
+      <label for="state">State (text the questions are about)
+        <textarea id="state" rows="6"></textarea>
+      </label>
+      <div id="questions"></div>
+      <div class="row">
+        <button type="button" id="addq">Add question</button>
+        <button type="button" class="primary" id="run" disabled>Decide</button>
+      </div>
+      <p class="hint">Options: one per line as <code>name: description</code> (the description is optional). For a score, list levels from lowest to highest. For yes/no, you may describe <code>yes:</code> and <code>no:</code>.</p>
+    </section>
+
+    <section class="panel" aria-labelledby="dec-h">
+      <h2 id="dec-h">Decisions</h2>
+      <div class="thr">
+        <label for="tau" style="display:block">Execute when confidence ≥</label>
+        <input type="range" id="tau" min="0.5" max="0.99" step="0.01" value="0.70">
+        <span class="pct" id="tauv">0.70</span>
+      </div>
+      <p class="hint">Below the threshold the decision is deferred to a person. The probabilities come from a single pass at flow time <i>t</i> = 0, which the flow-matching objective makes a proper estimate of the answer distribution. τ is the temperature that the RL-trained calibrator picks for each question: above 1 it softens an overconfident answer, and it never changes which option wins.</p>
+      <div id="decisions"><p class="empty">Decisions appear here once the model has loaded.</p></div>
+      <div class="summary" id="tokens"></div>
+    </section>
+  </div>
+
+  <footer>Examples are illustrative, not real customer data, and use task types the model was trained on (banking intents, reviews, news topics). On unfamiliar tasks it is less accurate, but in our tests it was rarely confidently wrong (0.5% of questions from unseen sources at confidence ≥ 0.9). Model: Rill-32M (Ettin encoder with DiT flow blocks, English-only) with its outcome-reward calibrator, int8 embeddings and 8-bit weights. The System-1 readout is one pass at flow time <i>t</i> = 0. Probabilities are conditional on the options you supply, and confidence means the probability of the top option. This is a research model: verify consequential decisions.</footer>
+</div>
+
+<script src="rill-core.js"></script>
+<script src="rill-engine.js"></script>
+<script type="module">
+// ONNX Runtime's ES-module bundle has its WebAssembly glue built in; the page hands it the .wasm binary it fetched itself.
+const ORT_URL = "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.30.0/dist/ort.wasm.bundle.min.mjs";
+(() => {
+  const PRESETS = {
+    "Bank message": {
+      state: "I ordered my new card over two weeks ago and it still hasn't shown up. How much longer should I wait?",
+      questions: [
+        { type: "choice", instructions: "Which banking intent best describes this customer message?", options: "card_arrival: waiting for a new card to arrive\ndeclined_card_payment: a card payment was declined\nlost_or_stolen_card: card lost or stolen\nrefund_not_showing_up: refund has not arrived\nchange_pin: change the PIN\nexchange_rate: question about exchange rates" },
+        { type: "noul", instructions: "Is the customer asking for money back?", options: "" },
+        { type: "score", instructions: "How upset is the customer?", options: "not upset\nslightly upset\nupset\nvery upset" }
+      ]
+    },
+    "Restaurant review": {
+      state: "The pasta was cold when it arrived and the sauce tasted like it came from a jar. The staff were friendly, but I won't be back.",
+      questions: [
+        { type: "score", instructions: "How many stars would this reviewer give?", options: "1 star\n2 stars\n3 stars\n4 stars\n5 stars" },
+        { type: "noul", instructions: "Would the reviewer recommend this restaurant?", options: "" },
+        { type: "choice", instructions: "What does the reviewer complain about most?", options: "food\nservice\nprice\nlocation" }
+      ]
+    },
+    "Missing evidence": {
+      state: "Hi all, the Thursday planning meeting has been moved to the large conference room on the third floor. Please bring your laptops.",
+      questions: [
+        { type: "choice", instructions: "At what time does the meeting start?", options: "9 am\n11 am\n2 pm\n4 pm" },
+        { type: "choice", instructions: "Where will the meeting take place?", options: "third-floor conference room\nlobby\nonline" },
+        { type: "noul", instructions: "Should attendees bring a laptop?", options: "" }
+      ]
+    },
+    "News item": {
+      state: "Shares of the chipmaker jumped 9% after it raised its full-year revenue forecast, citing strong demand from data-center customers.",
+      questions: [
+        { type: "choice", instructions: "What is the topic of this news article?", options: "world\nsports\nbusiness\nsci_tech: science and technology" },
+        { type: "noul", instructions: "Does the article mention a revenue forecast?", options: "" }
+      ]
+    }
+  };
+
+  const $ = (id) => document.getElementById(id);
+  let tokenizer = null, meta = null, runModel = null, busy = false;
+
+  function qTemplate(q, i) {
+    const d = document.createElement("div");
+    d.className = "q";
+    d.innerHTML = `<div class="qhead">
+        <label for="qt${i}">Type<select id="qt${i}"><option value="noul">yes / no</option><option value="choice">choice</option><option value="score">score</option></select></label>
+        <label for="qi${i}">Question<input type="text" id="qi${i}"></label>
+        <button type="button" aria-label="Remove question ${i + 1}">Remove</button>
+      </div>
+      <label for="qo${i}">Options<textarea class="opts" id="qo${i}" rows="3"></textarea></label>`;
+    const sel = d.querySelector("select"), ta = d.querySelector("textarea");
+    const hint = { noul: "optional:\nyes: what a yes means\nno: what a no means", choice: "billing: charges and refunds\nshipping: delivery problems",
+                   score: "lowest level\n…\nhighest level" };
+    sel.value = q.type;
+    d.querySelector("input").value = q.instructions;
+    ta.value = q.options;
+    ta.placeholder = hint[q.type];
+    sel.addEventListener("change", () => { ta.placeholder = hint[sel.value]; });
+    d.querySelector("button").addEventListener("click", () => { d.remove(); });
+    return d;
+  }
+
+  function loadPreset(name) {
+    const p = PRESETS[name];
+    $("state").value = typeof p.state === "string" ? p.state : JSON.stringify(p.state, null, 2);
+    const box = $("questions"); box.innerHTML = "";
+    p.questions.forEach((q, i) => box.appendChild(qTemplate(q, i)));
+    document.querySelectorAll("#presets button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.name === name)));
+    if (runModel) decide();
+  }
+
+  function parseState(text) {
+    const t = text.trim();
+    if (t.startsWith("{") || t.startsWith("[")) { try { return JSON.parse(t); } catch (e) { /* plain text */ } }
+    return text;
+  }
+
+  function parseOptions(type, text) {
+    const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
+    const kv = (l) => { const i = l.indexOf(":"); return i > 0 ? [l.slice(0, i).trim(), l.slice(i + 1).trim() || null] : [l, null]; };
+    if (type === "score") return lines;
+    if (type === "noul") {
+      const c = {}; for (const l of lines) { const [k, v] = kv(l); if (k.toLowerCase() === "yes") c.true = v; if (k.toLowerCase() === "no") c.false = v; }
+      return Object.keys(c).length ? c : null;
+    }
+    const c = {}; for (const l of lines) { const [k, v] = kv(l); c[k.replace(/\s+/g, "_")] = v; }
+    return c;
+  }
+
+  function buildRequest() {
+    const questions = {};
+    document.querySelectorAll("#questions .q").forEach((d, i) => {
+      const type = d.querySelector("select").value;
+      const instr = d.querySelector("input").value.trim();
+      const crit = parseOptions(type, d.querySelector("textarea").value);
+      if (type !== "noul" && (!crit || (Array.isArray(crit) ? crit.length < 2 : Object.keys(crit).length < 2))) return;
+      questions["q" + (i + 1)] = { type, instructions: instr || null, criteria: crit };
+    });
+    return { state: parseState($("state").value), questions };
+  }
+
+  function renderDecisions(req, rec, ans) {
+    const tau = parseFloat($("tau").value);
+    const box = $("decisions"); box.innerHTML = "";
+    rec.questions.forEach((q) => {
+      const a = ans[q.qid];
+      const exec = a.pmax >= tau;
+      const d = document.createElement("div"); d.className = "decision";
+      const head = (q.type === "noul" ? `P(yes) = ${a.noul.toFixed(2)}` : q.type === "choice" ? `choice: ${a.choice}` : `expected level ${a.score.toFixed(2)}`)
+        + (meta.calibrator ? ` · τ = ${a.tau.toFixed(2)}` : "");
+      d.innerHTML = `<div class="dhead"><span class="qtext"></span><span class="badge ${exec ? "exec" : "defer"}">${exec ? "execute" : "defer"} · ${a.pmax.toFixed(2)}</span></div>
+        <div class="summary">${head}</div>`;
+      d.querySelector(".qtext").textContent = q.instr || "(no instructions)";
+      q.options.forEach((opt, k) => {
+        const row = document.createElement("div"); row.className = "opt";
+        const p = a.p[k];
+        row.innerHTML = `<div class="bar ${k === a.top ? "top" : ""}"><i style="width:${(100 * p).toFixed(1)}%"></i><span></span></div><div class="pct">${(100 * p).toFixed(1)}%</div>`;
+        row.querySelector("span").textContent = opt;
+        d.appendChild(row);
+      });
+      box.appendChild(d);
+    });
+  }
+
+  let last = null;
+  async function decide() {
+    if (!runModel || busy) return;
+    const req = buildRequest();
+    if (!Object.keys(req.questions).length) { $("decisions").innerHTML = '<p class="empty">Add a question with at least two options.</p>'; return; }
+    busy = true; $("run").disabled = true;
+    try {
+      const rec = RillCore.toRecord(req);
+      const pk = RillCore.pack(tokenizer, meta, rec, 1500);
+      const L = pk.ids.length;
+      const t0 = performance.now();
+      const out = await runModel(pk);
+      const ms = performance.now() - t0;
+      const cal = RillCore.calibrate(out.slot_logits, out.slot_hidden, pk.layout, meta.calibrator);
+      const ans = RillCore.answers(cal.logits, pk.layout, cal.taus);
+      last = { req, rec, ans };
+      renderDecisions(req, rec, ans);
+      $("lat").textContent = `latency ${ms.toFixed(0)} ms`;
+      $("tokens").textContent = `${L} tokens · ${rec.questions.length} question${rec.questions.length === 1 ? "" : "s"} · one forward pass`;
+    } catch (e) {
+      $("decisions").innerHTML = `<p class="empty">Could not run the model: ${String(e.message || e)}</p>`;
+    } finally { busy = false; $("run").disabled = false; }
+  }
+
+  async function fetchText(url, onBytes) {
+    const bytes = await fetchWithProgress(url, onBytes);
+    return new TextDecoder().decode(bytes);
+  }
+
+  async function fetchWithProgress(url, onBytes) {
+    const r = await fetch(url);
+    if (!r.ok) throw new Error(`${url}: HTTP ${r.status}`);
+    const reader = r.body.getReader(); const chunks = []; let n = 0;
+    for (;;) { const { done, value } = await reader.read(); if (done) break; chunks.push(value); n += value.length; onBytes(value.length); }
+    const out = new Uint8Array(n); let o = 0; for (const c of chunks) { out.set(c, o); o += c.length; }
+    return out;
+  }
+
+  // WebAssembly is the fast path. Where a browser or host forbids it (or with #js in the address), the same 8-bit weights
+  // run in the pure-JavaScript engine (rill-engine.js), in a worker when possible; it is about ten times slower.
+  const wasmAllowed = () => { try { new WebAssembly.Module(Uint8Array.of(0, 97, 115, 109, 1, 0, 0, 0)); return true; } catch (e) { return false; } };
+
+  async function startOrt(buf, wasm) {
+    const ort = await import(ORT_URL);
+    ort.env.wasm.numThreads = 1;
+    ort.env.wasm.wasmBinary = wasm;
+    const session = await ort.InferenceSession.create(buf, { executionProviders: ["wasm"], graphOptimizationLevel: "all" });
+    const i64 = (a) => BigInt64Array.from(a.map((v) => BigInt(v)));
+    return async (pk) => {
+      const L = pk.ids.length;
+      const out = await session.run({
+        input_ids: new ort.Tensor("int64", i64(pk.ids), [1, L]),
+        segment_ids: new ort.Tensor("int64", i64(pk.seg), [1, L]),
+        position_ids: new ort.Tensor("int64", i64(pk.pos), [1, L]),
+        slot_index: new ort.Tensor("int64", i64(pk.slots), [pk.slots.length])
+      });
+      return { slot_logits: out.slot_logits.data, slot_hidden: out.slot_hidden ? out.slot_hidden.data : null };
+    };
+  }
+
+  async function startJs(buf) {
+    const spec = await (await fetch("model/rill-js.json")).json();
+    try {
+      const worker = new Worker("engine-worker.js");
+      const pend = new Map(); let seq = 0;
+      worker.onmessage = (e) => { const p = pend.get(e.data.id); pend.delete(e.data.id); if (p) (e.data.ok ? p.res(e.data) : p.rej(new Error(e.data.message))); };
+      worker.onerror = (e) => { for (const p of pend.values()) p.rej(new Error(e.message || "worker failed")); pend.clear(); };
+      const call = (msg) => new Promise((res, rej) => { const id = ++seq; pend.set(id, { res, rej }); worker.postMessage({ ...msg, id }); });
+      await call({ type: "init", bytes: buf, spec });
+      return (pk) => call({ type: "run", ids: pk.ids, seg: pk.seg, pos: pk.pos, slots: pk.slots });
+    } catch (e) {
+      const engine = new RillEngine(buf, spec);
+      return async (pk) => engine.run(pk.ids, pk.seg, pk.pos, pk.slots);
+    }
+  }
+
+  async function boot() {
+    try {
+      const manifest = await (await fetch("model/manifest.json")).json();
+      meta = manifest.meta;
+      $("size").textContent = `${(manifest.bytes / 1e6).toFixed(1)} MB model`;
+      const useWasm = location.hash !== "#js" && wasmAllowed();
+      let got = 0; const total = manifest.parts.reduce((a, p) => a + p.chars, 0) + (useWasm ? manifest.runtime.bytes : 0);
+      const tick = (n) => { got += n; $("status").textContent = `Downloading ${Math.min(100, 100 * got / total).toFixed(0)}%`; };
+      const [tokJSON, wasm, ...texts] = await Promise.all([
+        fetch("tokenizer/tokenizer.json").then((r) => r.json()),
+        useWasm ? fetchWithProgress(manifest.runtime.file, tick) : Promise.resolve(null),
+        ...manifest.parts.map((p) => fetchText(p.file, tick))
+      ]);
+      $("status").textContent = "Unpacking model…";
+      const buf = await RillCore.decodeModel(texts, manifest);
+      tokenizer = new RillCore.BPETokenizer(tokJSON);
+      $("status").textContent = "Starting runtime…";
+      if (useWasm) {
+        try { runModel = await startOrt(buf, wasm); $("engine").textContent = "WebAssembly · 1 thread"; }
+        catch (e) { console.warn("ONNX Runtime unavailable, using the JavaScript engine:", e); }
+      }
+      if (!runModel) { runModel = await startJs(buf); $("engine").textContent = "JavaScript engine · no WebAssembly"; }
+      $("dot").className = "dot ready"; $("status").textContent = "Ready · runs locally";
+      $("run").disabled = false;
+      decide();
+    } catch (e) {
+      $("dot").className = "dot err"; $("status").textContent = "Model failed to load";
+      $("decisions").innerHTML = `<p class="empty">The model could not be loaded in this browser: ${String(e.message || e)}</p>`;
+    }
+  }
+
+  Object.keys(PRESETS).forEach((name, i) => {
+    const b = document.createElement("button"); b.type = "button"; b.textContent = name; b.dataset.name = name;
+    b.setAttribute("aria-pressed", "false"); b.addEventListener("click", () => loadPreset(name));
+    $("presets").appendChild(b);
+  });
+  $("addq").addEventListener("click", () => { const n = $("questions").children.length; $("questions").appendChild(qTemplate({ type: "choice", instructions: "", options: "" }, n)); });
+  $("run").addEventListener("click", decide);
+  $("tau").addEventListener("input", () => { $("tauv").textContent = parseFloat($("tau").value).toFixed(2); if (last) renderDecisions(last.req, last.rec, last.ans); });
+  loadPreset("Bank message");
+  boot();
+})();
+</script>

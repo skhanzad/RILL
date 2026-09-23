@@ -1,0 +1,28 @@
+{
+ "ckpt": "runs/df68-B/best.pt",
+ "nfe": 4,
+ "noise": "zero",
+ "config": {
+  "backbone": "jhu-clsp/ettin-encoder-68m",
+  "dit_layers": 6,
+  "convnext_blocks": 2,
+  "score_encoding": "cdf"
+ },
+ "params": 72852481,
+ "decision-v7.development": {
+  "acc": 0.7863924050632911,
+  "nll": 0.6869896086284905,
+  "brier": 0.31829525340680637,
+  "ece": 0.12134312822772403,
+  "confident_error_rate": 0.07357594936708861,
+  "coverage_at_5pct_error": 0.5886075949367089
+ },
+ "transfer-v4.development": {
+  "acc": 0.5625,
+  "nll": 1.3921274904440162,
+  "brier": 0.6532766699897656,
+  "ece": 0.23872859844298525,
+  "confident_error_rate": 0.12957317073170732,
+  "coverage_at_5pct_error": 0.0
+ }
+}

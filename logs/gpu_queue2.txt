@@ -1,0 +1,4 @@
+cal_semif_minicpm | third_party/kev/.venv/bin/python baselines/run.py --system semif --model openbmb/MiniCPM5-2B --revision 12a3808a956f869c767195e9266b59c4d21d92e2 --suites decision-v7 --splits calibration --out results/baselines/semif-minicpm5-2b
+cal_layla_qwen | third_party/kev/.venv/bin/python baselines/run.py --system letters --model l3utterfly/Qwen1.5-1.8B-layla-v4 --suites decision-v7 --splits calibration --out results/baselines/layla-qwen1.5-1.8b
+cal_layla_mistral | third_party/kev/.venv/bin/python baselines/run.py --system letters --model l3utterfly/mistral-7b-v0.1-layla-v4 --quant nf4 --chat_template baselines/templates/user_assistant.jinja --letter_prefix " " --suites decision-v7 --splits calibration --out results/baselines/layla-mistral-7b-nf4
+STOP

@@ -1,0 +1,85 @@
+{
+ "ckpt": "runs/calrl-pool-brier-68B/best.pt",
+ "nfe": 1,
+ "noise": "zero",
+ "config": {
+  "backbone": "jhu-clsp/ettin-encoder-68m",
+  "dit_layers": 6,
+  "convnext_blocks": 2,
+  "score_encoding": "cdf",
+  "calibrator": true
+ },
+ "params": 72885698,
+ "decision-v7.test": {
+  "acc": 0.8266666666666667,
+  "nll": 0.42682849136083706,
+  "brier": 0.23695788474450538,
+  "ece": 0.01922932185050043,
+  "confident_error_rate": 0.010833333333333334,
+  "coverage_at_5pct_error": 0.66
+ },
+ "transfer-v4.test": {
+  "acc": 0.5823170731707317,
+  "nll": 0.8862546520309748,
+  "brier": 0.531844921955441,
+  "ece": 0.06971436497867418,
+  "confident_error_rate": 0.001524390243902439,
+  "coverage_at_5pct_error": 0.0
+ },
+ "transfer-v9.test": {
+  "acc": 0.505736137667304,
+  "nll": 1.1244362199163473,
+  "brier": 0.5816748329297068,
+  "ece": 0.04609074785352441,
+  "confident_error_rate": 0.0009560229445506692,
+  "coverage_at_5pct_error": 0.028680688336520075
+ },
+ "semif-v1.development": {
+  "acc": 0.5486111111111112,
+  "nll": 0.9985530143842705,
+  "brier": 0.5922306753338366,
+  "ece": 0.06455104821587586,
+  "confident_error_rate": 0.0,
+  "coverage_at_5pct_error": 0.027777777777777776
+ },
+ "wanli-v1.development": {
+  "acc": 0.42578125,
+  "nll": 1.0845881156198933,
+  "brier": 0.655597795712608,
+  "ece": 0.09875229282392782,
+  "confident_error_rate": 0.0,
+  "coverage_at_5pct_error": 0.00390625
+ },
+ "scienthoon-v1.development": {
+  "acc": 0.34822451317296677,
+  "nll": 1.2766789132125085,
+  "brier": 0.7430407527132645,
+  "ece": 0.2132252247956058,
+  "confident_error_rate": 0.002290950744558992,
+  "coverage_at_5pct_error": 0.0
+ },
+ "decision-v7.calibration": {
+  "acc": 0.7770034843205574,
+  "nll": 0.4750993846864604,
+  "brier": 0.28524971658639325,
+  "ece": 0.03288351382085761,
+  "confident_error_rate": 0.01132404181184669,
+  "coverage_at_5pct_error": 0.5270034843205574
+ },
+ "decision-v7.development": {
+  "acc": 0.7879746835443038,
+  "nll": 0.4720796534081748,
+  "brier": 0.2696153094988355,
+  "ece": 0.028511443591848457,
+  "confident_error_rate": 0.007911392405063292,
+  "coverage_at_5pct_error": 0.5862341772151899
+ },
+ "transfer-v4.development": {
+  "acc": 0.5685975609756098,
+  "nll": 0.9111648640949197,
+  "brier": 0.553092366018168,
+  "ece": 0.07630853489788564,
+  "confident_error_rate": 0.0,
+  "coverage_at_5pct_error": 0.0
+ }
+}

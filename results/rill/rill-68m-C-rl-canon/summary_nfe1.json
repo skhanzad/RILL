@@ -1,0 +1,70 @@
+{
+ "ckpt": "runs/rlcal68-C/best.pt",
+ "nfe": 1,
+ "noise": "zero",
+ "canonical": 1,
+ "config": {
+  "backbone": "jhu-clsp/ettin-encoder-68m",
+  "dit_layers": 6,
+  "convnext_blocks": 2,
+  "score_encoding": "cdf",
+  "calibrator": true
+ },
+ "params": 72885698,
+ "decision-v7.test": {
+  "acc": 0.8141666666666667,
+  "nll": 0.41962735217185615,
+  "brier": 0.23661562257605093,
+  "ece": 0.03662642742704014,
+  "confident_error_rate": 0.005,
+  "coverage_at_5pct_error": 0.6841666666666667
+ },
+ "transfer-v4.test": {
+  "acc": 0.5807926829268293,
+  "nll": 0.8423169995456509,
+  "brier": 0.5071528478900401,
+  "ece": 0.03201766582730239,
+  "confident_error_rate": 0.003048780487804878,
+  "coverage_at_5pct_error": 0.006097560975609756
+ },
+ "transfer-v9.test": {
+  "acc": 0.5076481835564054,
+  "nll": 1.0871986845070047,
+  "brier": 0.5617920758955971,
+  "ece": 0.02609792057985871,
+  "confident_error_rate": 0.0038240917782026767,
+  "coverage_at_5pct_error": 0.045889101338432124
+ },
+ "semif-v1.development": {
+  "acc": 0.4375,
+  "nll": 1.0508763823661396,
+  "brier": 0.6420740238754241,
+  "ece": 0.08987220928250994,
+  "confident_error_rate": 0.006944444444444444,
+  "coverage_at_5pct_error": 0.006944444444444444
+ },
+ "wanli-v1.development": {
+  "acc": 0.5859375,
+  "nll": 0.9695646874922259,
+  "brier": 0.5676664367558419,
+  "ece": 0.14976398630291574,
+  "confident_error_rate": 0.046875,
+  "coverage_at_5pct_error": 0.01171875
+ },
+ "scienthoon-v1.development": {
+  "acc": 0.4581901489117984,
+  "nll": 1.1122394696167428,
+  "brier": 0.6403207474261112,
+  "ece": 0.08255233617324478,
+  "confident_error_rate": 0.001145475372279496,
+  "coverage_at_5pct_error": 0.013745704467353952
+ },
+ "decision-v7.calibration": {
+  "acc": 0.7700348432055749,
+  "nll": 0.4743961163463091,
+  "brier": 0.28945923439470206,
+  "ece": 0.027578034300757254,
+  "confident_error_rate": 0.0078397212543554,
+  "coverage_at_5pct_error": 0.5182926829268293
+ }
+}
