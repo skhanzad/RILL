@@ -10,10 +10,11 @@ const [ortPath, wasmPath, refPath, outPath] = process.argv.slice(2);
 const ort = await import(ortPath);
 ort.env.wasm.wasmBinary = readFileSync(wasmPath); ort.env.wasm.numThreads = 1;
 const site = new URL("./site/", import.meta.url).pathname;
-const manifest = JSON.parse(readFileSync(site + "model/manifest.json", "utf8"));
-const bytes = await core.decodeModel(manifest.parts.map((p) => readFileSync(site + p.file, "utf8")), manifest);
-const tok = new core.BPETokenizer(JSON.parse(readFileSync(site + "tokenizer/tokenizer.json", "utf8")));
-const engine = new RillEngine(bytes, JSON.parse(readFileSync(site + "model/rill-js.json", "utf8")));
+const data = (path) => core.readDataScript(readFileSync(site + path, "utf8")).value;   // RillData.put(key, JSON) files
+const manifest = data("model/manifest.js");
+const bytes = await core.decodeModel(manifest.parts.map((p) => data(p.file)), manifest);
+const tok = new core.BPETokenizer(data(manifest.tokenizer.file));
+const engine = new RillEngine(bytes, data(manifest.engine.file));
 const sess = await ort.InferenceSession.create(bytes, { executionProviders: ["wasm"], graphOptimizationLevel: "all" });
 const i64 = (a) => BigInt64Array.from(a.map((v) => BigInt(v)));
 const ortRun = (pk) => sess.run({ input_ids: new ort.Tensor("int64", i64(pk.ids), [1, pk.ids.length]), segment_ids: new ort.Tensor("int64", i64(pk.seg), [1, pk.ids.length]),

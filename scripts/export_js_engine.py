@@ -6,6 +6,8 @@ norms, ConvNeXt vectors, the head, and the flow-branch modulations evaluated onc
 uses another t).
 
     python scripts/export_js_engine.py --ckpt runs/rlcal32-C/best.pt --onnx demo/site_build/rill.g8w8.onnx --out demo/site/model
+
+writes demo/site/model/engine.js (a data script, RillData.put("engine", ...)).
 """
 import argparse
 import base64
@@ -21,6 +23,7 @@ from onnx import numpy_helper
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
+from decisionflow.export import write_data_script  # noqa: E402
 from decisionflow.train import load  # noqa: E402
 
 
@@ -103,9 +106,8 @@ def main():
     out = {"config": conf, "embedding": emb, "matrices": mats, "small": small, "rope_inv_freq": rope,
            "checkpoint": a.ckpt, "onnx": Path(a.onnx).name}
     Path(a.out).mkdir(parents=True, exist_ok=True)
-    (Path(a.out) / "rill-js.json").write_text(json.dumps(out, separators=(",", ":")))
-    print(json.dumps({"matrices": len(mats), "max_err": max(v["max_err"] for v in mats.values()),
-                      "kB": (Path(a.out) / "rill-js.json").stat().st_size / 1e3}))
+    size = write_data_script(Path(a.out) / "engine.js", "engine", out)       # loaded by the page as <script src>
+    print(json.dumps({"matrices": len(mats), "max_err": max(v["max_err"] for v in mats.values()), "kB": size / 1e3}))
 
 
 if __name__ == "__main__":

@@ -9,12 +9,13 @@ const [ortPath, wasmPath, refPath, nMax] = process.argv.slice(2);
 const ort = await import(ortPath);
 ort.env.wasm.wasmBinary = readFileSync(wasmPath); ort.env.wasm.numThreads = 1;
 const site = new URL("./site/", import.meta.url).pathname;
-const manifest = JSON.parse(readFileSync(site + "model/manifest.json", "utf8"));
-const bytes = await core.decodeModel(manifest.parts.map((p) => readFileSync(site + p.file, "utf8")), manifest);
+const data = (path) => core.readDataScript(readFileSync(site + path, "utf8")).value;   // RillData.put(key, JSON) files
+const manifest = data("model/manifest.js");
+const bytes = await core.decodeModel(manifest.parts.map((p) => data(p.file)), manifest);
 const meta = manifest.meta;
-const tok = new core.BPETokenizer(JSON.parse(readFileSync(site + "tokenizer/tokenizer.json", "utf8")));
+const tok = new core.BPETokenizer(data(manifest.tokenizer.file));
 let t0 = performance.now();
-const engine = new RillEngine(bytes, JSON.parse(readFileSync(site + "model/rill-js.json", "utf8")));
+const engine = new RillEngine(bytes, data(manifest.engine.file));
 const tLoad = performance.now() - t0;
 const sess = await ort.InferenceSession.create(bytes, { executionProviders: ["wasm"] });
 const refAll = JSON.parse(readFileSync(refPath, "utf8"));

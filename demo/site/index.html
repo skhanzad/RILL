@@ -273,20 +273,6 @@ const ORT_URL = "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.30.0/dist/ort.wa
     } finally { busy = false; $("run").disabled = false; }
   }
 
-  async function fetchText(url, onBytes) {
-    const bytes = await fetchWithProgress(url, onBytes);
-    return new TextDecoder().decode(bytes);
-  }
-
-  async function fetchWithProgress(url, onBytes) {
-    const r = await fetch(url);
-    if (!r.ok) throw new Error(`${url}: HTTP ${r.status}`);
-    const reader = r.body.getReader(); const chunks = []; let n = 0;
-    for (;;) { const { done, value } = await reader.read(); if (done) break; chunks.push(value); n += value.length; onBytes(value.length); }
-    const out = new Uint8Array(n); let o = 0; for (const c of chunks) { out.set(c, o); o += c.length; }
-    return out;
-  }
-
   // WebAssembly is the fast path. Where a browser or host forbids it (or with #js in the address), the same 8-bit weights
   // run in the pure-JavaScript engine (rill-engine.js), in a worker when possible; it is about ten times slower.
   const wasmAllowed = () => { try { new WebAssembly.Module(Uint8Array.of(0, 97, 115, 109, 1, 0, 0, 0)); return true; } catch (e) { return false; } };
@@ -309,8 +295,8 @@ const ORT_URL = "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.30.0/dist/ort.wa
     };
   }
 
-  async function startJs(buf) {
-    const spec = await (await fetch("model/rill-js.json")).json();
+  async function startJs(buf, manifest) {
+    const spec = await RillCore.loadData(manifest.engine.file, manifest.engine.key);
     try {
       const worker = new Worker("engine-worker.js");
       const pend = new Map(); let seq = 0;
@@ -326,33 +312,44 @@ const ORT_URL = "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.30.0/dist/ort.wa
   }
 
   async function boot() {
+    const status = (text) => { $("status").textContent = text; };
     try {
-      const manifest = await (await fetch("model/manifest.json")).json();
+      if (!window.RillCore || !window.RillData) throw new Error("the page's scripts (rill-core.js) did not load");
+      status("Loading model…");
+      const manifest = await RillCore.loadData("model/manifest.js", "manifest");
       meta = manifest.meta;
       $("size").textContent = `${(manifest.bytes / 1e6).toFixed(1)} MB model`;
       const useWasm = location.hash !== "#js" && wasmAllowed();
-      let got = 0; const total = manifest.parts.reduce((a, p) => a + p.chars, 0) + (useWasm ? manifest.runtime.bytes : 0);
-      const tick = (n) => { got += n; $("status").textContent = `Downloading ${Math.min(100, 100 * got / total).toFixed(0)}%`; };
-      const [tokJSON, wasm, ...texts] = await Promise.all([
-        fetch("tokenizer/tokenizer.json").then((r) => r.json()),
-        useWasm ? fetchWithProgress(manifest.runtime.file, tick) : Promise.resolve(null),
-        ...manifest.parts.map((p) => fetchText(p.file, tick))
-      ]);
-      $("status").textContent = "Unpacking model…";
+      // every file is a data script loaded like any <script>; progress counts characters of the files received
+      const files = [...manifest.parts, manifest.tokenizer, ...(useWasm ? [manifest.runtime] : [])];
+      const total = files.reduce((a, f) => a + f.chars, 0); let got = 0;
+      const loaded = await Promise.all(files.map(async (f) => {
+        const v = await RillCore.loadData(f.file, f.key);
+        got += f.chars; status(`Downloading ${Math.round(100 * got / total)}%`);
+        return v;
+      }));
+      const texts = loaded.slice(0, manifest.parts.length), tokJSON = loaded[manifest.parts.length];
+      status("Unpacking model…");
       const buf = await RillCore.decodeModel(texts, manifest);
       tokenizer = new RillCore.BPETokenizer(tokJSON);
-      $("status").textContent = "Starting runtime…";
+      status("Starting runtime…");
       if (useWasm) {
-        try { runModel = await startOrt(buf, wasm); $("engine").textContent = "WebAssembly · 1 thread"; }
-        catch (e) { console.warn("ONNX Runtime unavailable, using the JavaScript engine:", e); }
+        try {
+          const wasm = await RillCore.gunzipBase64([loaded[loaded.length - 1]], manifest.runtime.bytes);
+          runModel = await startOrt(buf, wasm); $("engine").textContent = "WebAssembly · 1 thread";
+        } catch (e) { console.warn("ONNX Runtime unavailable, using the JavaScript engine:", e); }
       }
-      if (!runModel) { runModel = await startJs(buf); $("engine").textContent = "JavaScript engine · no WebAssembly"; }
-      $("dot").className = "dot ready"; $("status").textContent = "Ready · runs locally";
+      if (!runModel) { runModel = await startJs(buf, manifest); $("engine").textContent = "JavaScript engine · no WebAssembly"; }
+      $("dot").className = "dot ready"; status("Ready · runs locally");
       $("run").disabled = false;
       decide();
     } catch (e) {
-      $("dot").className = "dot err"; $("status").textContent = "Model failed to load";
-      $("decisions").innerHTML = `<p class="empty">The model could not be loaded in this browser: ${String(e.message || e)}</p>`;
+      const msg = String((e && e.message) || e);
+      $("dot").className = "dot err"; status(`Model failed to load: ${msg}`);
+      $("decisions").innerHTML = "";
+      const p = document.createElement("p"); p.className = "empty";
+      p.textContent = `The model could not be loaded in this browser: ${msg}`;
+      $("decisions").appendChild(p);
     }
   }
 

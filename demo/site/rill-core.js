@@ -238,18 +238,56 @@
     return u;
   }
 
-  async function decodeModel(texts, manifest) {
+  // base64 text of consecutive gzip slices -> the original bytes
+  async function gunzipBase64(texts, size) {
     const chunks = texts.map(b64bytes);
     const gz = new Uint8Array(chunks.reduce((a, c) => a + c.length, 0));
     let o = 0; for (const c of chunks) { gz.set(c, o); o += c.length; }
-    if (manifest.encoding !== "gzip+base64") return gz;
     const stream = new Blob([gz]).stream().pipeThrough(new DecompressionStream("gzip"));
     const out = new Uint8Array(await new Response(stream).arrayBuffer());
-    if (out.length !== manifest.bytes) throw new Error(`model size ${out.length} != ${manifest.bytes}`);
+    if (size !== undefined && out.length !== size) throw new Error(`unpacked ${out.length} bytes, expected ${size}`);
     return out;
   }
 
-  const api = { BPETokenizer, render, toRecord, pack, softmax, calibrate, answers, decodeModel };
+  const decodeModel = (texts, manifest) => gunzipBase64(texts, manifest.bytes);
+
+  // Data files are JavaScript of the form  RillData.put("<key>", <JSON>);  so a page loads them as ordinary scripts.
+  // A sandboxed viewer runs the page at an opaque origin, where fetch() of the page's own files is a cross-origin request
+  // that needs CORS headers; <script src> does not. If a script is refused, the same file is fetched and its JSON
+  // payload parsed (no eval).
+  const registry = new Map();
+  const RillData = { put: (key, value) => { registry.set(key, value); } };
+
+  function readDataScript(text) {
+    const m = /^\s*RillData\.put\("([^"]+)",([\s\S]*)\);\s*$/.exec(text);
+    if (!m) throw new Error("not a data script");
+    return { key: m[1], value: JSON.parse(m[2]) };
+  }
+
+  function loadScript(src) {
+    return new Promise((resolve, reject) => {
+      const s = document.createElement("script");
+      s.src = src; s.async = true;
+      s.onload = () => { s.remove(); resolve(); };
+      s.onerror = () => { s.remove(); reject(new Error(`script ${src} was refused`)); };
+      document.head.appendChild(s);
+    });
+  }
+
+  async function loadData(src, key) {
+    try {
+      await loadScript(src);
+      if (registry.has(key)) { const v = registry.get(key); registry.delete(key); return v; }
+      throw new Error(`${src} did not register "${key}"`);
+    } catch (scriptError) {
+      let r;
+      try { r = await fetch(src); } catch (e) { throw new Error(`${scriptError.message}; fetch failed too (${e.message})`); }
+      if (!r.ok) throw new Error(`${scriptError.message}; fetch returned HTTP ${r.status}`);
+      return readDataScript(await r.text()).value;
+    }
+  }
+
+  const api = { BPETokenizer, render, toRecord, pack, softmax, calibrate, answers, decodeModel, gunzipBase64, loadData, readDataScript };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
-  else root.RillCore = api;
+  else { root.RillCore = api; root.RillData = RillData; }
 })(typeof self !== "undefined" ? self : this);

@@ -22,6 +22,15 @@ from .layout import Batch, Layout, collate
 from .train import load
 
 
+def write_data_script(path, key: str, value) -> int:
+    """Write  RillData.put("<key>", <JSON>);  -- a data file the browser demo loads as an ordinary script (no fetch, so
+    no CORS from a sandboxed page), and whose payload stays plain JSON for Node tools (rill-core.js readDataScript).
+    ASCII-only JSON keeps it valid in any JavaScript engine. Returns the file size in bytes."""
+    text = 'RillData.put("' + key + '",' + json.dumps(value, separators=(",", ":"), ensure_ascii=True) + ");\n"
+    Path(path).write_text(text, encoding="ascii")
+    return len(text)
+
+
 def calibrator_weights(cal) -> dict:
     """Calibrator parameters as nested lists (JSON), rounded to 7 significant digits."""
     r = lambda t: [float(f"{v:.7g}") for v in t.detach().float().reshape(-1).tolist()]

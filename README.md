@@ -63,7 +63,7 @@ small baselines in parallel). Kev-4B runs with `KEV_MERGE=0 KEV_DTYPE=bf16`: mer
 
 ```bash
 # ONNX export of the System-1 readout (+ the calibrator weights), int8 embeddings + 8-bit weight-only MatMulNBits,
-# packaged for the browser (gzip + base64 text parts, the ONNX Runtime Web WASM binary, tokenizer)
+# packaged for the browser as JavaScript data scripts (model parts, tokenizer, gzipped ONNX Runtime WASM binary)
 $PY scripts/export_demo.py --ckpt runs/rlcal32-C/best.pt --out demo/site --ort_dist <onnxruntime-web-1.30.0>/package/dist
 $PY scripts/export_js_engine.py --ckpt runs/rlcal32-C/best.pt --onnx demo/site_build/rill.g8w8.onnx --out demo/site/model
 $PY scripts/check_quant.py --ckpt runs/rlcal32-C/best.pt --onnx_dir demo/site_build --variants int8 --extra g8w8=demo/site_build/rill.g8w8.onnx
@@ -78,3 +78,5 @@ Web. Where WebAssembly is not allowed (or with `#js` in the address) it switches
 JavaScript implementation of the same forward pass that reads the same 8-bit weights out of the ONNX file, in a Web
 Worker. `rill-core.js` holds the tokenizer, request packing and the calibrator, and matches the Python layout
 token for token. Weight-only 8-bit quantisation keeps about 99% of the fp32 decisions (`demo/site_build/quant_check.*`).
+Every data file is a script of the form `RillData.put(key, JSON)` loaded with `<script src>`, not `fetch()`: viewers
+that sandbox the page give it an opaque origin, where fetching its own files would need CORS headers.
