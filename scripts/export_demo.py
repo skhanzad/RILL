@@ -2,9 +2,10 @@
 ONNX export of the System-1 readout -> int8 embeddings + 8-bit weight-only MatMuls -> gzip -> base64 parts of
 <= part_mb MB. Every file the page needs (manifest, model parts, tokenizer, the gzipped ORT WASM binary) is written as a
 JavaScript data script  RillData.put(key, JSON);  that the page loads with <script src>: a sandboxed viewer runs the
-page at an opaque origin, where fetch() of the page's own files would need CORS headers. The page loads ORT's ES-module
-bundle from a CDN (its Emscripten glue is built in) and hands it the WASM binary. An RL calibrator, if the checkpoint
-has one, travels in the manifest and is applied by rill-core.js.
+page at an opaque origin, where fetch() of the page's own files would need CORS headers. ORT's ES-module bundle (its
+Emscripten glue is built in) is copied next to the page as ort/ort.wasm.bundle.min.js; the page imports it, or the same
+file from a CDN at an opaque origin, and hands it the WASM binary. An RL calibrator, if the checkpoint has one, travels in
+the manifest and is applied by rill-core.js. The output directory is what GitHub Pages serves (.github/workflows/pages.yml).
 
     python scripts/export_demo.py --ckpt runs/rlcal32-C/best.pt --out demo/site --ort_dist <onnxruntime-web>/package/dist
 """
@@ -13,6 +14,7 @@ import base64
 import gzip
 import hashlib
 import json
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -65,13 +67,15 @@ def main():
     # ONNX Runtime Web's WASM binary, gzipped (14 MB -> about 5 MB as base64)
     wasm = (Path(a.ort_dist) / "ort-wasm-simd-threaded.wasm").read_bytes()
     wasm_size = write_data_script(odir / "wasm.js", "wasm", base64.b64encode(gzip.compress(wasm, 9)).decode())
+    shutil.copyfile(Path(a.ort_dist) / "ort.wasm.bundle.min.mjs", odir / "ort.wasm.bundle.min.js")   # the glue for that binary
+    ort_pkg = json.loads((Path(a.ort_dist).parent / "package.json").read_text())
     meta = json.loads((tmp / "rill_meta.json").read_text())
     manifest = {"parts": parts, "encoding": "gzip+base64", "gz_bytes": len(gz), "bytes": len(data), "sha256": hashlib.sha256(data).hexdigest(),
                 "meta": meta, "inputs": ["input_ids", "segment_ids", "position_ids", "slot_index"], "outputs": meta["outputs"],
                 "checkpoint": str(a.ckpt),
                 "tokenizer": {"file": "tokenizer/tokenizer.js", "key": "tokenizer", "chars": tok_size},
                 "runtime": {"file": "ort/wasm.js", "key": "wasm", "bytes": len(wasm), "chars": wasm_size, "encoding": "gzip+base64",
-                            "package": "onnxruntime-web@1.30.0"},
+                            "package": f"{ort_pkg['name']}@{ort_pkg['version']}"},
                 "engine": {"file": "model/engine.js", "key": "engine"}}
     write_data_script(mdir / "manifest.js", "manifest", manifest)
     total = sum(p.stat().st_size for p in out.rglob("*") if p.is_file())

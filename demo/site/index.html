@@ -1,5 +1,17 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Rill Decision Lab</title>
+<meta name="description" content="Rill-32M, a flow-matching decision model with an outcome-reward calibrator, running in your browser: calibrated probabilities for yes/no, choice and score questions about a text.">
+<meta property="og:title" content="Rill Decision Lab">
+<meta property="og:description" content="A 34M-parameter flow-matching decision model with an outcome-reward calibrator, running in your browser.">
+<meta name="theme-color" content="#f2f4f1" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0e1412" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2313808c'/%3E%3Cpath d='M7 12.5c3-3 6 3 9 0s6-3 9 0M7 20.5c3-3 6 3 9 0s6-3 9 0' stroke='%23fff' stroke-width='2.4' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Newsreader:opsz,wght@6..72,500;6..72,600&display=swap">
 <style>
 :root {
@@ -9,6 +21,9 @@
   --display: "Newsreader", "Iowan Old Style", Georgia, serif;
   --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
   --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  color-scheme: light;
+  padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px);
+  -webkit-text-size-adjust: 100%; text-size-adjust: 100%;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
@@ -23,7 +38,10 @@
   --bar: #1d4146; --focus: #52b8c4; color-scheme: dark;
 }
 * { box-sizing: border-box; }
-body { background: var(--ground); color: var(--ink); font: 15px/1.5 var(--sans); padding-inline: 16px; padding-block: 20px 48px; }
+[hidden] { display: none !important; }
+body { margin: 0; background: var(--ground); color: var(--ink); font: 15px/1.5 var(--sans);
+  padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px)); padding-block: 20px 48px; }
+a { color: var(--water); }
 .wrap { max-width: 1120px; margin: 0 auto; display: grid; gap: 20px; }
 header { display: grid; gap: 6px; }
 h1 { font: 600 clamp(1.7rem, 3.4vw, 2.3rem)/1.1 var(--display); margin: 0; letter-spacing: -0.01em; text-wrap: balance; }
@@ -73,10 +91,20 @@ textarea.opts { font: 13px/1.5 var(--mono); }
 .thr { display: grid; grid-template-columns: auto minmax(0, 1fr) 52px; gap: 10px; align-items: center; }
 input[type="range"] { width: 100%; accent-color: var(--water); }
 .empty { color: var(--muted); font-size: 14px; }
-footer { color: var(--muted); font-size: 12.5px; max-width: 80ch; }
+.dl-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 10px; }
+a.dl { display: grid; gap: 4px; align-content: start; padding: 11px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--ground); color: var(--ink); text-decoration: none; }
+a.dl:hover { border-color: var(--water); }
+a.dl b { font: 500 13px/1.3 var(--mono); color: var(--water); overflow-wrap: anywhere; }
+a.dl > span { font-size: 12.5px; line-height: 1.4; color: var(--muted); }
+a.dl[aria-disabled="true"] { opacity: .55; pointer-events: none; }
+.sha code { overflow-wrap: anywhere; }
+footer { color: var(--muted); font-size: 12.5px; max-width: 80ch; display: grid; gap: 8px; }
+footer p { margin: 0; }
+.links { display: flex; flex-wrap: wrap; gap: 6px 16px; }
 code { font-family: var(--mono); font-size: .92em; }
 </style>
-
+</head>
+<body>
 <div class="wrap">
   <header>
     <span class="eyebrow">typed decisions, computed on this device</span>
@@ -89,6 +117,7 @@ code { font-family: var(--mono); font-size: .92em; }
       <span class="chip" id="engine">runtime —</span>
     </div>
   </header>
+  <noscript><p class="empty">This demo runs the model with JavaScript; please enable it.</p></noscript>
 
   <div class="grid">
     <section class="panel" aria-labelledby="req-h">
@@ -120,14 +149,27 @@ code { font-family: var(--mono); font-size: .92em; }
     </section>
   </div>
 
-  <footer>Examples are illustrative, not real customer data, and use task types the model was trained on (banking intents, reviews, news topics). On unfamiliar tasks it is less accurate, but in our tests it was rarely confidently wrong (0.5% of questions from unseen sources at confidence ≥ 0.9). Model: Rill-32M (Ettin encoder with DiT flow blocks, English-only) with its outcome-reward calibrator, int8 embeddings and 8-bit weights. The System-1 readout is one pass at flow time <i>t</i> = 0. Probabilities are conditional on the options you supply, and confidence means the probability of the top option. This is a research model: verify consequential decisions.</footer>
+  <section class="panel" id="files" aria-labelledby="files-h" hidden>
+    <h2 id="files-h">Download the model</h2>
+    <p class="hint" id="files-note">The files this page runs, rebuilt from what it downloaded. The links work once the model has loaded.</p>
+    <div class="dl-list">
+      <a class="dl" data-file="onnx" download="rill-32m.onnx" aria-disabled="true"><b><span aria-hidden="true">↓ </span>rill-32m.onnx</b><span><span class="size">— MB</span> · the network, with int8 embeddings and 8-bit weights</span></a>
+      <a class="dl" data-file="tokenizer" download="rill-32m.tokenizer.json" aria-disabled="true"><b><span aria-hidden="true">↓ </span>rill-32m.tokenizer.json</b><span><span class="size">— MB</span> · byte-level BPE, Hugging Face tokenizers format</span></a>
+      <a class="dl" data-file="meta" download="rill-32m.meta.json" aria-disabled="true"><b><span aria-hidden="true">↓ </span>rill-32m.meta.json</b><span><span class="size">— MB</span> · special-token ids, length limits, calibrator weights</span></a>
+    </div>
+    <p class="hint">Inputs <code>input_ids</code>, <code>segment_ids</code> and <code>position_ids</code> (1 × L) and <code>slot_index</code> (one per option), all int64. Outputs <code>slot_logits</code> and <code>slot_hidden</code>, which the calibrator turns into probabilities. <a href="rill-core.js" target="_blank" rel="noopener">rill-core.js</a> packs a request and applies the calibrator exactly as the Python code does, and runs in Node as well.</p>
+    <p class="hint sha">SHA-256 of rill-32m.onnx: <code id="sha">—</code> <span id="shaok"></span></p>
+  </section>
+
+  <footer>
+    <p>Examples are illustrative, not real customer data, and use task types the model was trained on (banking intents, reviews, news topics). On unfamiliar tasks it is less accurate, but in our tests it was rarely confidently wrong (0.5% of questions from unseen sources at confidence ≥ 0.9). Model: Rill-32M (Ettin encoder with DiT flow blocks, English-only) with its outcome-reward calibrator, int8 embeddings and 8-bit weights. The System-1 readout is one pass at flow time <i>t</i> = 0. Probabilities are conditional on the options you supply, and confidence means the probability of the top option. This is a research model: verify consequential decisions.</p>
+    <p class="links"><a id="repo" target="_blank" rel="noopener" hidden>Source on GitHub</a><a href="THIRD_PARTY_NOTICES.txt" target="_blank" rel="noopener">Third-party notices</a></p>
+  </footer>
 </div>
 
 <script src="rill-core.js"></script>
 <script src="rill-engine.js"></script>
 <script type="module">
-// ONNX Runtime's ES-module bundle has its WebAssembly glue built in; the page hands it the .wasm binary it fetched itself.
-const ORT_URL = "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.30.0/dist/ort.wasm.bundle.min.mjs";
 (() => {
   const PRESETS = {
     "Bank message": {
@@ -164,6 +206,7 @@ const ORT_URL = "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.30.0/dist/ort.wa
   };
 
   const $ = (id) => document.getElementById(id);
+  const mb = (n) => `${(n / 1e6).toFixed(1)} MB`;
   let tokenizer = null, meta = null, runModel = null, busy = false;
 
   function qTemplate(q, i) {
@@ -277,8 +320,20 @@ const ORT_URL = "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.30.0/dist/ort.wa
   // run in the pure-JavaScript engine (rill-engine.js), in a worker when possible; it is about ten times slower.
   const wasmAllowed = () => { try { new WebAssembly.Module(Uint8Array.of(0, 97, 115, 109, 1, 0, 0, 0)); return true; } catch (e) { return false; } };
 
-  async function startOrt(buf, wasm) {
-    const ort = await import(ORT_URL);
+  // ONNX Runtime Web's ES-module bundle has its WebAssembly glue built in; the page hands it the .wasm binary it loaded
+  // itself. The copy next to the page comes first. A page at an opaque origin (a sandboxed viewer, or a file opened from
+  // disk) cannot import its own files as modules, so it takes the same file from the CDN.
+  async function importOrt(pkg) {
+    const urls = [...(self.origin === "null" ? [] : ["./ort/ort.wasm.bundle.min.js"]), `https://cdn.jsdelivr.net/npm/${pkg}/dist/ort.wasm.bundle.min.mjs`];
+    let err = null;
+    for (const url of urls) {
+      try { return await import(url); } catch (e) { err = e; console.warn(`Could not import ${url}:`, e); }
+    }
+    throw err;
+  }
+
+  async function startOrt(buf, wasm, pkg) {
+    const ort = await importOrt(pkg);
     ort.env.wasm.numThreads = 1;
     ort.env.wasm.wasmBinary = wasm;
     const session = await ort.InferenceSession.create(buf, { executionProviders: ["wasm"], graphOptimizationLevel: "all" });
@@ -311,38 +366,68 @@ const ORT_URL = "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.30.0/dist/ort.wa
     }
   }
 
+  // The model files, offered for download as soon as they are unpacked. A sandboxed viewer blocks downloads, so inside a
+  // frame the panel stays hidden.
+  const canDownload = (() => { try { return window.top === window.self; } catch (e) { return false; } })();
+
+  function offerDownloads(manifest, buf, tokJSON) {
+    const info = { model: "Rill-32M", onnx: { file: "rill-32m.onnx", bytes: manifest.bytes, sha256: manifest.sha256 },
+                   inputs: manifest.inputs, outputs: manifest.outputs, ...manifest.meta };
+    const blobs = { onnx: new Blob([buf], { type: "application/octet-stream" }),
+                    tokenizer: new Blob([JSON.stringify(tokJSON)], { type: "application/json" }),
+                    meta: new Blob([JSON.stringify(info, null, 1)], { type: "application/json" }) };
+    for (const a of document.querySelectorAll("#files a.dl")) {
+      const blob = blobs[a.dataset.file];
+      a.href = URL.createObjectURL(blob);
+      a.querySelector(".size").textContent = mb(blob.size);
+      a.removeAttribute("aria-disabled");
+    }
+    $("files-note").textContent = "The files this page runs, rebuilt from what it downloaded.";
+  }
+
+  async function checkSha(buf, want) {
+    if (!(self.crypto && crypto.subtle)) return;                      // Web Crypto needs a secure context (https or localhost)
+    const hex = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", buf)), (b) => b.toString(16).padStart(2, "0")).join("");
+    $("shaok").textContent = hex === want ? "(checked in this browser)" : `(this browser computed ${hex})`;
+  }
+
   async function boot() {
     const status = (text) => { $("status").textContent = text; };
     try {
       if (!window.RillCore || !window.RillData) throw new Error("the page's scripts (rill-core.js) did not load");
+      if (typeof DecompressionStream === "undefined") throw new Error("this browser cannot unpack it (it needs Safari 16.4, Chrome 80, Firefox 113 or newer)");
       status("Loading model…");
       const manifest = await RillCore.loadData("model/manifest.js", "manifest");
       meta = manifest.meta;
-      $("size").textContent = `${(manifest.bytes / 1e6).toFixed(1)} MB model`;
+      $("size").textContent = `${mb(manifest.bytes)} model`;
+      $("sha").textContent = manifest.sha256;
       const useWasm = location.hash !== "#js" && wasmAllowed();
       // every file is a data script loaded like any <script>; progress counts characters of the files received
       const files = [...manifest.parts, manifest.tokenizer, ...(useWasm ? [manifest.runtime] : [])];
       const total = files.reduce((a, f) => a + f.chars, 0); let got = 0;
+      status(`Downloading ${mb(total)}…`);
       const loaded = await Promise.all(files.map(async (f) => {
         const v = await RillCore.loadData(f.file, f.key);
-        got += f.chars; status(`Downloading ${Math.round(100 * got / total)}%`);
+        got += f.chars; status(`Downloading ${mb(total)} · ${Math.round(100 * got / total)}%`);
         return v;
       }));
       const texts = loaded.slice(0, manifest.parts.length), tokJSON = loaded[manifest.parts.length];
       status("Unpacking model…");
       const buf = await RillCore.decodeModel(texts, manifest);
       tokenizer = new RillCore.BPETokenizer(tokJSON);
+      if (canDownload) offerDownloads(manifest, buf, tokJSON);
       status("Starting runtime…");
       if (useWasm) {
         try {
           const wasm = await RillCore.gunzipBase64([loaded[loaded.length - 1]], manifest.runtime.bytes);
-          runModel = await startOrt(buf, wasm); $("engine").textContent = "WebAssembly · 1 thread";
+          runModel = await startOrt(buf, wasm, manifest.runtime.package); $("engine").textContent = "WebAssembly · 1 thread";
         } catch (e) { console.warn("ONNX Runtime unavailable, using the JavaScript engine:", e); }
       }
       if (!runModel) { runModel = await startJs(buf, manifest); $("engine").textContent = "JavaScript engine · no WebAssembly"; }
       $("dot").className = "dot ready"; status("Ready · runs locally");
       $("run").disabled = false;
-      decide();
+      await decide();
+      if (canDownload) checkSha(buf, manifest.sha256).catch((e) => console.warn("SHA-256 check failed:", e));
     } catch (e) {
       const msg = String((e && e.message) || e);
       $("dot").className = "dot err"; status(`Model failed to load: ${msg}`);
@@ -350,8 +435,16 @@ const ORT_URL = "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.30.0/dist/ort.wa
       const p = document.createElement("p"); p.className = "empty";
       p.textContent = `The model could not be loaded in this browser: ${msg}`;
       $("decisions").appendChild(p);
+      $("files-note").textContent = "The model did not load in this browser, so there is nothing to download.";
     }
   }
+
+  // Served from GitHub Pages (user.github.io/repo/): link back to the repository.
+  if (location.hostname.endsWith(".github.io")) {
+    const user = location.hostname.split(".")[0], repo = location.pathname.split("/")[1] || location.hostname;
+    $("repo").href = `https://github.com/${user}/${repo}`; $("repo").hidden = false;
+  }
+  if (canDownload) $("files").hidden = false;
 
   Object.keys(PRESETS).forEach((name, i) => {
     const b = document.createElement("button"); b.type = "button"; b.textContent = name; b.dataset.name = name;
@@ -359,9 +452,17 @@ const ORT_URL = "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.30.0/dist/ort.wa
     $("presets").appendChild(b);
   });
   $("addq").addEventListener("click", () => { const n = $("questions").children.length; $("questions").appendChild(qTemplate({ type: "choice", instructions: "", options: "" }, n)); });
-  $("run").addEventListener("click", decide);
+  // in the one-column layout (phones) the decisions sit below the request: bring them into view after Decide
+  $("run").addEventListener("click", async () => {
+    await decide();
+    const panel = $("dec-h").closest("section");
+    if (matchMedia("(max-width: 860px)").matches && panel.getBoundingClientRect().top > innerHeight / 2)
+      panel.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+  });
   $("tau").addEventListener("input", () => { $("tauv").textContent = parseFloat($("tau").value).toFixed(2); if (last) renderDecisions(last.req, last.rec, last.ans); });
   loadPreset("Bank message");
   boot();
 })();
 </script>
+</body>
+</html>

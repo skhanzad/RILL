@@ -44,11 +44,9 @@ Thumbs.db
 /export/
 *.onnx
 
-# Browser demo: keep the page and its JavaScript; the packaged model, tokenizer and ONNX Runtime binary are rebuilt by
-# scripts/export_demo.py and scripts/export_js_engine.py. The build directory keeps only the quantisation checks.
-demo/site/model/
-demo/site/ort/
-demo/site/tokenizer/
+# Browser demo: demo/site is committed whole, including the packaged model, tokenizer and ONNX Runtime files (47 MB, made
+# by scripts/export_demo.py and scripts/export_js_engine.py), so GitHub Pages can serve it as it is. The build directory
+# keeps only the quantisation checks; the raw ONNX Runtime files used by the Node checks are not kept.
 demo/site_build/*
 !demo/site_build/quant_check.*.json
 demo/ort.wasm.bundle.min.mjs

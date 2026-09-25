@@ -18,14 +18,24 @@ shape that open decision-model projects share (state + named questions with `nou
   against Kev, SemIf (and JEV-CPU's configuration), the Layla on-device models, and NLI zero-shot classifiers.
   Nothing here calls a hosted decision API.
 
+## Try it in the browser
+
+**[skhanzad.github.io/RILL](https://skhanzad.github.io/RILL/)** runs Rill-32M with its calibrator on your own device
+(phone, laptop or desktop), with no server and nothing to install. The first visit downloads about 48 MB, which the
+browser then caches. A request takes about 0.15 s in desktop Chrome (WebAssembly, one thread). The page also offers the
+model files it runs for download: the ONNX graph, the tokenizer, and a JSON file with the calibrator weights and token
+ids.
+
+[![Rill Decision Lab: a request with three typed questions and the calibrated decisions](demo/screenshot.png)](https://skhanzad.github.io/RILL/)
+
 ## Layout
 
 ```
 decisionflow/        model, token layout, data pipeline, Stage-1 training, RL, evaluation, ONNX export
 baselines/           predictors and runner for SemIf / Layla (letter logits + generative) / NLI / Kev
 scripts/             data building, evaluation, aggregation, tables, latency, quantisation checks, demo packaging
-demo/site/           the in-browser demo (static files); demo/*.mjs are its Node checks and benchmark
-paper/               AISTATS 2027 paper (main.tex, TikZ architecture figure, sections/, refs.bib)
+demo/site/           the in-browser demo and its packaged model (static files); demo/*.mjs: Node checks, benchmark
+.github/workflows/   pages.yml checks demo/site and publishes it to GitHub Pages
 results/             prediction rows, reports, latency, aggregate.json (every number in the paper)
 runs/                checkpoints and training logs
 third_party/         kev (Apache-2.0) and SemIf (MIT) clones used for data, prompts and metrics
@@ -70,6 +80,7 @@ $PY scripts/check_quant.py --ckpt runs/rlcal32-C/best.pt --onnx_dir demo/site_bu
 bash scripts/cpu_bench2.sh 32 68 150                     # CPU latency, 4 threads: PyTorch fp32 and the 8-bit ONNX model
 node demo/engine_check.mjs <ort.wasm.bundle.min.mjs> <ort-wasm-simd-threaded.wasm> <ref.json>   # JS engine vs ORT vs PyTorch
 node demo/bench_wasm.mjs <ort.wasm.bundle.min.mjs> <ort-wasm-simd-threaded.wasm> <lat_ref.json> results/latency/wasm-rill-32m-C.json
+node demo/check_site.mjs demo/site                      # the packaged files are complete and answer the page's first example
 cd demo/site && python3 -m http.server 8000             # then open http://localhost:8000
 ```
 
@@ -79,4 +90,15 @@ JavaScript implementation of the same forward pass that reads the same 8-bit wei
 Worker. `rill-core.js` holds the tokenizer, request packing and the calibrator, and matches the Python layout
 token for token. Weight-only 8-bit quantisation keeps about 99% of the fp32 decisions (`demo/site_build/quant_check.*`).
 Every data file is a script of the form `RillData.put(key, JSON)` loaded with `<script src>`, not `fetch()`: viewers
-that sandbox the page give it an opaque origin, where fetching its own files would need CORS headers.
+that sandbox the page give it an opaque origin, where fetching its own files would need CORS headers. The page imports
+ONNX Runtime's bundle from its own `ort/` folder. At an opaque origin (a sandboxed viewer, or `index.html` opened from
+disk) importing its own files is blocked in the same way, so it takes the same file from jsDelivr. The page therefore
+works from any static host, inside a sandboxed viewer, and straight from a clone.
+
+### Publishing the demo on GitHub Pages
+
+`demo/site` is committed whole, including the packaged model (48 MB in files of at most 14 MB, marked as generated in
+`.gitattributes`). `.github/workflows/pages.yml` runs `demo/check_site.mjs` and deploys the folder to
+`https://<owner>.github.io/<repo>/` on every push to `main` that changes it. It can also be started by hand from the
+Actions tab. One-time setup: **Settings → Pages → Build and deployment → Source: GitHub Actions**. After a new
+export, commit the regenerated `demo/site` files.
